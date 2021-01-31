@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     {% elif goal.__class__.__name__ == 'TopicMessageParamGoal' %}
     g = TopicMessageParamGoal(topic='{{ goal.topic }}',
-                              condition=lambda msg: True)
+                              condition={{ goal.cond_lambda }})
     {% endif %}
     t.add_goal(g)
     {% endfor %}

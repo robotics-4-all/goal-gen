@@ -14,66 +14,119 @@ jinja_env = jinja2.Environment(
 
 template = jinja_env.get_template('template.tpl')
 
+srcgen_folder = path.join(path.realpath(getcwd()), 'gen')
 
-class GeneratorGoalee:
-    srcgen_folder = path.join(path.realpath(getcwd()), 'gen')
 
-    @staticmethod
-    def generate(model_fpath: str,
-                 out_dir: str = None):
-        # Create output folder
-        if out_dir is None:
-            out_dir = GeneratorGoalee.srcgen_folder
-        model, imports = build_model(model_fpath)
-        if not path.exists(out_dir):
-            mkdir(out_dir)
+def generate(model_fpath: str,
+             out_dir: str = None):
+    # Create output folder
+    if out_dir is None:
+        out_dir = srcgen_folder
+    model, _ = build_model(model_fpath)
+    if not path.exists(out_dir):
+        mkdir(out_dir)
 
-        target = model.target
-        middleware = target.middleware
-        goals = target.goals
+    target = model.target
+    middleware = target.middleware
+    goals = target.goals
 
-        GeneratorGoalee.report_middleware(middleware)
-        GeneratorGoalee.report_goals(goals)
+    report_middleware(middleware)
+    report_goals(goals)
 
-        out_file = path.join(out_dir, "goal_checker.py")
-        with open(path.join(out_file), 'w') as f:
-            f.write(template.render(middleware=middleware,
-                                    target=target,
-                                    goals=goals))
-        chmod(out_file, 509)
+    for goal in goals:
+        if goal.__class__.__name__ == 'TopicMessageParamGoal':
+            cond_expr = parse_topic_condition(goal)
+            cond_lambda = make_topic_condition_lambda(cond_expr)
+            print(cond_lambda)
+            goal.cond_lambda = cond_lambda
 
-    def report_goals(goals: list):
-        for goal in goals:
-            if goal.__class__.__name__ == 'TopicMessageReceivedGoal':
-                print(f'[*]  - Found TopicMessageReceivedGoal')
-            elif goal.__class__.__name__ == 'TopicMessageParamGoal':
-                print(f'[*]  - Found TopicMessageParamGoal')
+    out_file = path.join(out_dir, "goal_checker.py")
+    with open(path.join(out_file), 'w') as f:
+        f.write(template.render(middleware=middleware,
+                                target=target,
+                                goals=goals))
+    chmod(out_file, 509)
 
-    def report_middleware(middleware):
-        if middleware.__class__.__name__ == 'AMQPBroker':
-            print('[*] - Middleware == AMQP Broker')
-            print(f'-> host: {middleware.host}')
-            print(f'-> port: {middleware.port}')
-            print(f'-> vhost: {middleware.vhost}')
-            print(f'-> exchange: {middleware.exchange}')
-            print(f'-> username: {middleware.auth.username}')
-            print(f'-> password: {middleware.auth.password}')
-        elif middleware.__class__.__name__ == 'RedisBroker':
-            print('[*] - Middleware == Redis Broker')
-            print(f'-> host: {middleware.host}')
-            print(f'-> port: {middleware.port}')
-            print(f'-> db: {middleware.db}')
-            print(f'-> username: {middleware.auth.username}')
-            print(f'-> password: {middleware.auth.password}')
-        elif middleware.__class__.__name__ == 'MQTTBroker':
-            print('[*] - Middleware == MQTTBroker Broker')
-            print(f'-> host: {middleware.host}')
-            print(f'-> port: {middleware.port}')
-            print(f'-> username: {middleware.auth.username}')
-            print(f'-> password: {middleware.auth.password}')
+
+def to_python_op(op):
+    if op == 'AND':
+        return 'and'
+    elif op == 'OR':
+        return 'or'
+
+
+def make_topic_condition_lambda(expr):
+    return f'lambda msg: True if {expr} else False'
+
+
+def transform_condition(condition):
+    expr = ''
+    if condition.__class__.__name__ == "ConditionGroup":
+        r1 = transform_condition(condition.r1)
+        r2 = transform_condition(condition.r2)
+        op = condition.operator
+        expr = f'({r1} {to_python_op(op)} {r2})'
+    elif condition.__class__.__name__ == "StringCondition":
+        if condition.operator in ('==', '!='):
+            # expr = f'msg["{condition.param}"] == "{condition.val}"'
+            expr = f'msg["{condition.param}"] {condition.operator} "{condition.val}"'
+        elif condition.operator == '~':
+            expr = f'"{condition.val}" in msg["{condition.param}"]'
+        elif condition.operator == '!~':
+            expr = f'"{condition.val}" not in msg["{condition.param}"]'
+    elif condition.__class__.__name__ == "NumericCondition":
+        expr = f'msg["{condition.param}"] {condition.operator} {condition.val}'
+    return expr
+
+
+def parse_topic_condition(goal):
+    cond = goal.condition
+    if cond.__class__.__name__ == "ConditionGroup":
+        print(f'TopicMessageParamGoal for topic <{goal.topic}>' + \
+              f' condition is of type <ConditionGroup>')
+    elif cond.__class__.__name__ == "StringCondition":
+        print(f'TopicMessageParamGoal for topic <{goal.topic}>' + \
+              f' condition is of type <StringCondition>')
+    elif cond.__class__.__name__ == "NumericCondition":
+        print(f'TopicMessageParamGoal for topic <{goal.topic}>' + \
+              f' condition is of type <NumericCondition>')
+    expr = transform_condition(cond)
+    return expr
+
+
+def report_goals(goals: list):
+    for goal in goals:
+        if goal.__class__.__name__ == 'TopicMessageReceivedGoal':
+            print(f'[*]  - Found TopicMessageReceivedGoal')
+        elif goal.__class__.__name__ == 'TopicMessageParamGoal':
+            print(f'[*]  - Found TopicMessageParamGoal')
+
+
+def report_middleware(middleware):
+    if middleware.__class__.__name__ == 'AMQPBroker':
+        print('[*] - Middleware == AMQP Broker')
+        print(f'-> host: {middleware.host}')
+        print(f'-> port: {middleware.port}')
+        print(f'-> vhost: {middleware.vhost}')
+        print(f'-> exchange: {middleware.exchange}')
+        print(f'-> username: {middleware.auth.username}')
+        print(f'-> password: {middleware.auth.password}')
+    elif middleware.__class__.__name__ == 'RedisBroker':
+        print('[*] - Middleware == Redis Broker')
+        print(f'-> host: {middleware.host}')
+        print(f'-> port: {middleware.port}')
+        print(f'-> db: {middleware.db}')
+        print(f'-> username: {middleware.auth.username}')
+        print(f'-> password: {middleware.auth.password}')
+    elif middleware.__class__.__name__ == 'MQTTBroker':
+        print('[*] - Middleware == MQTTBroker Broker')
+        print(f'-> host: {middleware.host}')
+        print(f'-> port: {middleware.port}')
+        print(f'-> username: {middleware.auth.username}')
+        print(f'-> password: {middleware.auth.password}')
 
 
 @generator('goal_dsl', 'goalee')
 def goal_dsl_generate_goalee(metamodel, model, output_path, overwrite, debug, **custom_args):
     "Generator for generating goalee from goal_dsl descriptions"
-    GeneratorGoalee.generate(model._tx_filename)
+    generate(model._tx_filename)
