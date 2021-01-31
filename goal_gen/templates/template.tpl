@@ -14,11 +14,15 @@ if __name__ == '__main__':
 
     {% for goal in goals %}
     {% if goal.__class__.__name__ == 'TopicMessageReceivedGoal' %}
-    g = TopicMessageReceivedGoal(topic='{{ goal.topic }}')
+    g = TopicMessageReceivedGoal(topic='{{ goal.topic }}',
+                                 max_duration={{ goal.max_duration }},
+                                 min_duration={{ goal.min_duration }})
 
     {% elif goal.__class__.__name__ == 'TopicMessageParamGoal' %}
     g = TopicMessageParamGoal(topic='{{ goal.topic }}',
-                              condition={{ goal.cond_lambda }})
+                              condition={{ goal.cond_lambda }},
+                              max_duration={{ goal.max_duration }},
+                              min_duration={{ goal.min_duration }})
     {% endif %}
     t.add_goal(g)
     {% endfor %}

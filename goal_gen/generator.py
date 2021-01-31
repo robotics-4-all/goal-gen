@@ -39,6 +39,7 @@ def generate(model_fpath: str,
             cond_lambda = make_topic_condition_lambda(cond_expr)
             print(cond_lambda)
             goal.cond_lambda = cond_lambda
+        goal = goal_max_min_duration_from_tc(goal)
 
     out_file = path.join(out_dir, "goal_checker.py")
     with open(path.join(out_file), 'w') as f:
@@ -46,6 +47,26 @@ def generate(model_fpath: str,
                                 target=target,
                                 goals=goals))
     chmod(out_file, 509)
+
+
+def goal_max_min_duration_from_tc(goal):
+    max_duration = None
+    min_duration = None
+    if goal.timeConstraints is None:
+        print(f'[*] Goal <{goal.name}> does not have any time constraints.')
+    elif len(goal.timeConstraints) == 0:
+        print(f'[*] Goal <{goal.name}> does not have any time constraints.')
+    else:
+        for tc in goal.timeConstraints:
+            if tc.__class__.__name__ != 'TimeConstraintDuration':
+                continue
+            max_duration = tc.time if tc.comparator == '<' else max_duration
+            min_duration = tc.time if tc.comparator == '>' else min_duration
+    print(f'[*] Goal <{goal.name}> max duration: {max_duration} seconds')
+    print(f'[*] Goal <{goal.name}> min duration: {min_duration} seconds')
+    goal.max_duration = max_duration
+    goal.min_duration = min_duration
+    return goal
 
 
 def to_python_op(op):
@@ -82,13 +103,13 @@ def transform_condition(condition):
 def parse_topic_condition(goal):
     cond = goal.condition
     if cond.__class__.__name__ == "ConditionGroup":
-        print(f'TopicMessageParamGoal for topic <{goal.topic}>' + \
+        print(f'[*] - TopicMessageParamGoal for topic <{goal.topic}>' + \
               f' condition is of type <ConditionGroup>')
     elif cond.__class__.__name__ == "StringCondition":
-        print(f'TopicMessageParamGoal for topic <{goal.topic}>' + \
+        print(f'[*] - TopicMessageParamGoal for topic <{goal.topic}>' + \
               f' condition is of type <StringCondition>')
     elif cond.__class__.__name__ == "NumericCondition":
-        print(f'TopicMessageParamGoal for topic <{goal.topic}>' + \
+        print(f'[*] - TopicMessageParamGoal for topic <{goal.topic}>' + \
               f' condition is of type <NumericCondition>')
     expr = transform_condition(cond)
     return expr
