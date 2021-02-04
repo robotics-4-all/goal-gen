@@ -10,16 +10,18 @@ if __name__ == '__main__':
     {% elif middleware.__class__.__name__ == 'RedisBroker' %}
     middleware = RedisMiddleware()
     {% endif %}
-    t = Target(middleware)
+    t = Target(middleware, name='{{ target.name }}')
 
     {% for goal in goals %}
     {% if goal.__class__.__name__ == 'TopicMessageReceivedGoal' %}
     g = TopicMessageReceivedGoal(topic='{{ goal.topic }}',
+                                 name='{{ goal.name }}',
                                  max_duration={{ goal.max_duration }},
                                  min_duration={{ goal.min_duration }})
 
     {% elif goal.__class__.__name__ == 'TopicMessageParamGoal' %}
     g = TopicMessageParamGoal(topic='{{ goal.topic }}',
+                              name='{{ goal.name }}',
                               condition={{ goal.cond_lambda }},
                               max_duration={{ goal.max_duration }},
                               min_duration={{ goal.min_duration }})
