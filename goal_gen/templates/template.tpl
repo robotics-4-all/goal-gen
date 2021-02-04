@@ -29,5 +29,9 @@ if __name__ == '__main__':
     t.add_goal(g)
     {% endfor %}
 
+    {% if target.concurrent == True %}
+    t.run_concurrent()
+    {% else %}
     t.run_seq()
+    {% endif %}
 

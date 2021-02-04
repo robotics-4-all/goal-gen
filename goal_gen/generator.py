@@ -26,10 +26,9 @@ def generate(model_fpath: str,
     if not path.exists(out_dir):
         mkdir(out_dir)
 
-    target = model.target
-    middleware = target.middleware
-    goals = target.goals
-
+    target, middleware, goals = set_defaults(model.target,
+                                             model.target.middleware,
+                                             model.goals)
     report_middleware(middleware)
     report_goals(goals)
 
@@ -47,6 +46,12 @@ def generate(model_fpath: str,
                                 target=target,
                                 goals=goals))
     chmod(out_file, 509)
+
+
+def set_defaults(target, middleware, goals):
+    if target.concurrent is None:
+        target.concurrent = True
+    return target, middleware, goals
 
 
 def goal_max_min_duration_from_tc(goal):
@@ -156,6 +161,8 @@ def report_middleware(middleware):
         print(f'-> port: {middleware.port}')
         print(f'-> username: {middleware.auth.username}')
         print(f'-> password: {middleware.auth.password}')
+    else:
+        raise ValueError(f'Middleware class ({middleware}) not supported!!')
 
 
 @generator('goal_dsl', 'goalee')
