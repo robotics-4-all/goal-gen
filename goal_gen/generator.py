@@ -88,16 +88,27 @@ def transform_condition(condition):
         op = condition.operator
         expr = f'({r1} {to_python_op(op)} {r2})'
     elif condition.__class__.__name__ == "StringCondition":
+        m = condition_param_to_py_syntax(condition.param)
         if condition.operator in ('==', '!='):
             # expr = f'msg["{condition.param}"] == "{condition.val}"'
-            expr = f'msg["{condition.param}"] {condition.operator} "{condition.val}"'
+            # print(condition.param)
+            expr = f'{m} {condition.operator} "{condition.val}"'
         elif condition.operator == '~':
-            expr = f'"{condition.val}" in msg["{condition.param}"]'
+            expr = f'"{condition.val}" in {m}'
         elif condition.operator == '!~':
-            expr = f'"{condition.val}" not in msg["{condition.param}"]'
+            expr = f'"{condition.val}" not in {m}'
     elif condition.__class__.__name__ == "NumericCondition":
-        expr = f'msg["{condition.param}"] {condition.operator} {condition.val}'
+        m = condition_param_to_py_syntax(condition.param)
+        expr = f'{m} {condition.operator} {condition.val}'
     return expr
+
+
+def condition_param_to_py_syntax(param):
+    levels = param.split('.')
+    sub_str = 'msg'
+    for l in levels:
+        sub_str = sub_str + f'[\'{l}\']'
+    return sub_str
 
 
 def parse_topic_condition(goal):
