@@ -46,6 +46,7 @@ def generate(model_fpath: str,
                                 target=target,
                                 goals=goals))
     chmod(out_file, 509)
+    return out_dir
 
 
 def set_defaults(target, middleware, goals):
