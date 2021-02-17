@@ -10,7 +10,8 @@ if __name__ == '__main__':
     {% elif middleware.__class__.__name__ == 'RedisBroker' %}
     middleware = RedisMiddleware()
     {% endif %}
-    t = Target(middleware, name='{{ target.name }}')
+    t = Target(middleware, name='{{ target.name }}',
+               score_weights={{ target.scoreWeights }})
 
     {% for goal in goals %}
     {% if goal.__class__.__name__ == 'TopicMessageReceivedGoal' %}

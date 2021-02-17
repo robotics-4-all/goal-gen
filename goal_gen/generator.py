@@ -52,6 +52,10 @@ def generate(model_fpath: str,
 def set_defaults(target, middleware, goals):
     if target.concurrent is None:
         target.concurrent = True
+    if target.scoreWeights is None:
+        target.scoreWeights = [1/len(target.goals)] * len(target.goals)
+    elif len(target.scoreWeights) == 0:
+        target.scoreWeights = [1/len(target.goals)] * len(target.goals)
     return target, middleware, goals
 
 
@@ -68,8 +72,8 @@ def goal_max_min_duration_from_tc(goal):
                 continue
             max_duration = tc.time if tc.comparator == '<' else max_duration
             min_duration = tc.time if tc.comparator == '>' else min_duration
-    print(f'[*] Goal <{goal.name}> max duration: {max_duration} seconds')
-    print(f'[*] Goal <{goal.name}> min duration: {min_duration} seconds')
+    print(f'Goal <{goal.name}> max duration: {max_duration} seconds')
+    print(f'Goal <{goal.name}> min duration: {min_duration} seconds')
     goal.max_duration = max_duration
     goal.min_duration = min_duration
     return goal
