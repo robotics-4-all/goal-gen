@@ -30,15 +30,9 @@ def generate(model_fpath: str,
                                              model.target.middleware,
                                              model.goals)
     report_middleware(middleware)
-    report_goals(goals)
+    report_goals(target)
 
-    for goal in goals:
-        if goal.__class__.__name__ == 'TopicMessageParamGoal':
-            cond_expr = parse_topic_condition(goal)
-            cond_lambda = make_topic_condition_lambda(cond_expr)
-            print(cond_lambda)
-            goal.cond_lambda = cond_lambda
-        goal = goal_max_min_duration_from_tc(goal)
+    goals = process_goals(target.goals)
 
     out_file = path.join(out_dir, "goal_checker.py")
     with open(path.join(out_file), 'w') as f:
@@ -47,6 +41,19 @@ def generate(model_fpath: str,
                                 goals=goals))
     chmod(out_file, 509)
     return out_dir
+
+
+def process_goals(goals):
+    for goal in goals:
+        if goal.__class__.__name__ == 'TopicMessageParamGoal':
+            cond_expr = parse_topic_condition(goal)
+            cond_lambda = make_topic_condition_lambda(cond_expr)
+            # print(cond_lambda)
+            goal.cond_lambda = cond_lambda
+        goal_max_min_duration_from_tc(goal)
+        if goal.__class__.__name__ == 'ComplexGoal':
+            process_goals(goal.goals)
+    return goals
 
 
 def set_defaults(target, middleware, goals):
@@ -63,9 +70,9 @@ def goal_max_min_duration_from_tc(goal):
     max_duration = None
     min_duration = None
     if goal.timeConstraints is None:
-        print(f'[*] Goal <{goal.name}> does not have any time constraints.')
+        print(f'Goal <{goal.name}> does not have any time constraints.')
     elif len(goal.timeConstraints) == 0:
-        print(f'[*] Goal <{goal.name}> does not have any time constraints.')
+        print(f'Goal <{goal.name}> does not have any time constraints.')
     else:
         for tc in goal.timeConstraints:
             if tc.__class__.__name__ != 'TimeConstraintDuration':
@@ -76,7 +83,6 @@ def goal_max_min_duration_from_tc(goal):
     print(f'Goal <{goal.name}> min duration: {min_duration} seconds')
     goal.max_duration = max_duration
     goal.min_duration = min_duration
-    return goal
 
 
 def to_python_op(op):
@@ -136,12 +142,9 @@ def parse_topic_condition(goal):
     return expr
 
 
-def report_goals(goals: list):
-    for goal in goals:
-        if goal.__class__.__name__ == 'TopicMessageReceivedGoal':
-            print(f'[*]  - Found TopicMessageReceivedGoal')
-        elif goal.__class__.__name__ == 'TopicMessageParamGoal':
-            print(f'[*]  - Found TopicMessageParamGoal')
+def report_goals(target: list):
+    for goal in target.goals:
+        print(f'Found Goal of type <{goal.__class__.__name__}>')
 
 
 def report_middleware(middleware):
