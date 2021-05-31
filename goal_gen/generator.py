@@ -70,17 +70,17 @@ def goal_max_min_duration_from_tc(goal):
     max_duration = None
     min_duration = None
     if goal.timeConstraints is None:
-        print(f'Goal <{goal.name}> does not have any time constraints.')
+        print(f'[*] - Goal <{goal.name}> does not have any time constraints.')
     elif len(goal.timeConstraints) == 0:
-        print(f'Goal <{goal.name}> does not have any time constraints.')
+        print(f'[*] - Goal <{goal.name}> does not have any time constraints.')
     else:
         for tc in goal.timeConstraints:
             if tc.__class__.__name__ != 'TimeConstraintDuration':
                 continue
             max_duration = tc.time if tc.comparator == '<' else max_duration
             min_duration = tc.time if tc.comparator == '>' else min_duration
-    print(f'Goal <{goal.name}> max duration: {max_duration} seconds')
-    print(f'Goal <{goal.name}> min duration: {min_duration} seconds')
+    print(f'[*] - Goal <{goal.name}> max duration: {max_duration} seconds')
+    print(f'[*] - Goal <{goal.name}> min duration: {min_duration} seconds')
     goal.max_duration = max_duration
     goal.min_duration = min_duration
 
@@ -144,7 +144,7 @@ def parse_topic_condition(goal):
 
 def report_goals(target: list):
     for goal in target.goals:
-        print(f'Found Goal of type <{goal.__class__.__name__}>')
+        print(f'[*] - Found Goal of type <{goal.__class__.__name__}>')
 
 
 def report_middleware(middleware):
