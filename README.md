@@ -8,7 +8,7 @@ the validation software.
 2. [Usage](#usage)
 
 
-## Installation
+## Installation <a name="installation"></a>
 
 Download this repository and simply install using `pip` package manager.
 
@@ -18,7 +18,7 @@ cd goal-gen
 pip install .
 ```
 
-## Usage
+## Usage <a name="usage"></a>
 
 This generator is provided via `textx` for generating the source code from given input goaldsl
 model. An example of using the cli is given below:
