@@ -16,15 +16,15 @@ if __name__ == '__main__':
     t = Target(middleware, name='{{ target.name }}',
                score_weights={{ target.scoreWeights }})
 
-    {% for goal in target.goals %}
-    {% if goal.__class__.__name__ == 'TopicMessageReceivedGoal' %}
-    g = TopicMessageReceivedGoal(topic='{{ goal.topic }}',
+    {% for goal in goals %}
+    {% if goal.__class__.__name__ == 'EntityStateConditionGoal' %}
+    g = TopicMessageReceivedGoal(topic='{{ goal.entity.topic }}',
                                  name='{{ goal.name }}',
                                  max_duration={{ goal.max_duration }},
                                  min_duration={{ goal.min_duration }})
 
-    {% elif goal.__class__.__name__ == 'TopicMessageParamGoal' %}
-    g = TopicMessageParamGoal(topic='{{ goal.topic }}',
+    {% elif goal.__class__.__name__ == 'EntityStateChangeGoal' %}
+    g = TopicMessageParamGoal(topic='{{ goal.entity.topic }}',
                               name='{{ goal.name }}',
                               condition={{ goal.cond_lambda }},
                               max_duration={{ goal.max_duration }},
@@ -54,18 +54,19 @@ if __name__ == '__main__':
                     max_duration={{ goal.max_duration }},
                     min_duration={{ goal.min_duration }})
     {% for goal in goal.goals %}
-    {% if goal.__class__.__name__ == 'TopicMessageReceivedGoal' %}
-    gs = TopicMessageReceivedGoal(topic='{{ goal.topic }}',
-                                  name='{{ goal.name }}',
-                                  max_duration={{ goal.max_duration }},
-                                  min_duration={{ goal.min_duration }})
+    {% if goal.__class__.__name__ == 'EntityStateConditionGoal' %}
+    g = EntityStateConditionGoal(
+        name='{{ goal.name }}',
+        condition={{goal.cond_lambda}},
+        max_duration={{ goal.max_duration }},
+        min_duration={{ goal.min_duration }}
+    )
 
-    {% elif goal.__class__.__name__ == 'TopicMessageParamGoal' %}
-    gs = TopicMessageParamGoal(topic='{{ goal.topic }}',
-                               name='{{ goal.name }}',
-                               condition={{ goal.cond_lambda }},
-                               max_duration={{ goal.max_duration }},
-                               min_duration={{ goal.min_duration }})
+    {% elif goal.__class__.__name__ == 'EntityStateChangeGoal' %}
+    g = EntityStateChangeGoal(topic='{{ goal.entity.topic }}',
+                              name='{{ goal.name }}',
+                              max_duration={{ goal.max_duration }},
+                              min_duration={{ goal.min_duration }})
     {% elif goal.__class__.__name__ == 'CircularAreaGoal' %}
     gs = CircularAreaGoal(topic='{{ goal.topic }}',
                           name='{{ goal.name }}',

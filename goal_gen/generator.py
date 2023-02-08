@@ -45,11 +45,11 @@ def generate(model_fpath: str,
 
 def process_goals(goals):
     for goal in goals:
-        if goal.__class__.__name__ == 'TopicMessageParamGoal':
-            cond_expr = parse_topic_condition(goal)
-            cond_lambda = make_topic_condition_lambda(cond_expr)
-            # print(cond_lambda)
+        if goal.__class__.__name__ == 'EntityStateConditionGoal':
+            cond_lambda = make_condition_lambda(goal.condition)
             goal.cond_lambda = cond_lambda
+        if goal.__class__.__name__ == 'EntityStateChangeGoal':
+            print(goal)
         goal_max_min_duration_from_tc(goal)
         if goal.__class__.__name__ == 'ComplexGoal':
             process_goals(goal.goals)
@@ -92,7 +92,8 @@ def to_python_op(op):
         return 'or'
 
 
-def make_topic_condition_lambda(expr):
+def make_condition_lambda(condition):
+    expr = transform_condition(condition)
     return f'lambda msg: True if {expr} else False'
 
 
@@ -120,26 +121,11 @@ def transform_condition(condition):
 
 
 def condition_param_to_py_syntax(param):
-    levels = param.split('.')
+    levels = param.name.split('.')
     sub_str = 'msg'
     for l in levels:
         sub_str = sub_str + f'[\'{l}\']'
     return sub_str
-
-
-def parse_topic_condition(goal):
-    cond = goal.condition
-    if cond.__class__.__name__ == "ConditionGroup":
-        print(f'[*] - TopicMessageParamGoal for topic <{goal.topic}>' + \
-              f' condition is of type <ConditionGroup>')
-    elif cond.__class__.__name__ == "StringCondition":
-        print(f'[*] - TopicMessageParamGoal for topic <{goal.topic}>' + \
-              f' condition is of type <StringCondition>')
-    elif cond.__class__.__name__ == "NumericCondition":
-        print(f'[*] - TopicMessageParamGoal for topic <{goal.topic}>' + \
-              f' condition is of type <NumericCondition>')
-    expr = transform_condition(cond)
-    return expr
 
 
 def report_goals(target: list):
